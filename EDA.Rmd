@@ -1,0 +1,122 @@
+---
+title: "EDA"
+author: "Olov Wikstrom"
+date: "6/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(quanteda); library(readtext); library(ggplot2); library(dplyr);library(Hmisc);library(cowplot)
+```
+
+## Download datasets
+For this course, 3 datasets are made available for use, each at 150-200mb and sourced from Twitter comments, blogs and news sources respectively. The news dataset contains special ASCII characters which breaks the connection when reading in data. Since this only occurs 3 times in the file, the quickest way was simply to edit those out in Wordpad before importing. 
+
+## Quanteda text processing
+Quanteda is a R package for text analysis which will be used for this report. Quanteda uses a data struture called Document-Feature Matrix or DFM. Due to the high memory requirements the conversion of the textfiles to DFM is done in batches and saved to file. 
+
+
+```{r loading, echo =FALSE, cache=TRUE}
+location <- 'https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip'
+source('batchFile.R')
+
+if (!file.exists(basename(location))) {
+        download.file(location, basename(location))
+        unzip(basename(location))
+
+        
+}       
+files <- unzip(basename(location),list = TRUE)
+
+batches <- 5
+
+# Tweets
+if (!file.exists('tweetsdfm.rds')){
+        tweets <- readLines(files[11,1], encoding='UTF-8', skipNul=TRUE)
+        tweets <- corpus(tweets, docnames = paste('tweet',1:length(tweets), sep = ""), docvars = data.frame(src = 'twitter'))
+        
+        tweets <- batchedDFM(tweets)
+        saveRDS(tweets, 'tweetsdfm.rds')
+        rm('tweets')
+}
+
+# News 
+if (!file.exists('newsdfm.rds')){
+        news <- readLines(files[12,1], encoding='UTF-8', skipNul=TRUE)
+        news <- corpus(news, docnames = paste('news',1:length(news), sep = ""), docvars = data.frame(src = 'news'))
+        
+        news <- batchedDFM(news)
+        saveRDS(news, 'newsdfm.rds')
+        rm('news')
+}
+
+# Blogs 
+if (!file.exists('blogsdfm.rds')){
+        blogs <- readLines(files[13,1], encoding='UTF-8', skipNul=TRUE)
+        blogs <- corpus(blogs, docnames = paste('blogs',1:length(blogs), sep = ""), docvars = data.frame(src = 'blogs'))
+        
+        blogs <- batchedDFM(blogs)
+        saveRDS(blogs, 'blogsdfm.rds')
+}
+
+if (!exists('blogs')){
+        blogs <- readRDS('blogsdfm.rds')
+}
+```
+
+
+```{r dfming, echo=FALSE}
+```
+
+
+
+
+## Including Plots
+In order to make a better sense of the 3 datasets let's plot on one hand the histograms of word frequency and on the other coverage, i.e. how many word it would take to cover a specific percentage of the texts.
+
+```{r plots, cache=TRUE, warning=F}
+# Blog plots
+summary <- textstat_frequency(blogs)
+summary$instances <- cut2(summary$frequency, g=15)
+
+gg1 <- ggplot(summary, aes(x=instances))+ylab('Count')+ xlab('Word frequency (grouped)')+geom_histogram(stat='count', fill='lightblue')
+gg2 <- ggplot(summary, aes(x=log10(rank), y=cumsum(frequency)/sum(frequency)))+geom_line()
+
+
+# Twitter plots
+sumTwitter <- textstat_frequency(readRDS('tweetsdfm.rds'))
+sumTwitter$instances <- cut2(sumTwitter$frequency, g=15)
+
+ggTwit1 <- ggplot(sumTwitter, aes(x=instances))+ylab('Count')+ xlab('Word frequency (grouped)')+geom_histogram(stat='count', fill='lightblue')
+ggTwit2 <- ggplot(sumTwitter, aes(x=log10(rank), y=cumsum(frequency)/sum(frequency)))+geom_line()
+
+
+# News plots
+sumNews <- textstat_frequency(readRDS('newsdfm.rds'))
+sumNews$instances <- cut2(sumNews$frequency, g=15)
+
+ggNews1 <- ggplot(sumNews, aes(x=instances))+ylab('Count')+ xlab('Word frequency (grouped)')+geom_histogram(stat='count', fill='lightblue')
+ggNews2 <- ggplot(sumNews, aes(x=log10(rank), y=cumsum(frequency)/sum(frequency)))+geom_line()
+
+
+plot_grid(gg1, gg2, align = 'h')
+plot_grid(ggTwit1,ggTwit2, align = 'h')
+plot_grid(ggNews1, ggNews2, align = 'h')
+
+```
+  
+## Data distribution
+It would seem that the 3 datasets are surprisingly similar in that they all contain a significant amount of single use words and about 10.000 words cover 90% of the vocabulary for each set. A further investigation of some examples of the single use words show that many are would not be very useful for a predictive model as they consist of misspellings,made-up words and plain gibberish.
+
+```{r spotcheck, cache=TRUE, warning=F}
+data.frame(news= tail(sumNews$feature,50),twitter= tail(sumTwitter$feature,50),blogs =tail(summary$feature, 50))
+```
+
+## Data comparison
+```{r compare, cache=TRUE, warning=F}
+data.frame(news= tail(sumNews$feature,50),twitter= tail(sumTwitter$feature,50),blogs =tail(summary$feature, 50))
+```
+  
+# Preliminary conclusions
+The databases are surprisingly similar in distribution of word frequencies and use. There seems to be need for cleaning the data in all 3 to remove that data which will not help our model.
