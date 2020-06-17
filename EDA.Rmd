@@ -9,13 +9,17 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(quanteda); library(readtext); library(ggplot2); library(dplyr);library(Hmisc);library(cowplot)
 ```
+### Introduction
+This purpose of this report is to give an overview of the initial Exploratory Data Analysis performed as part of the Data Science Capstone Project with Coursera/John Hopkins. The purpose is to give an overview of the features of the 3 datasets included at the outset of the project with a focus on results rather than process. For that purpose and that of readeability, all code has been included in the appendix.
 
-## Download datasets
+During this exercise we will use Quanteda, which is a R package for text analysis. Quanteda uses a data struture called Document-Feature Matrix or DFM. Due to the high memory requirements the conversion of the textfiles to DFM will be done in batches and saved to file.
+
+
+For additional clarity: 
+**Please note that all code is included in the appendices**
+
+#### Downloads and data processing
 For this course, 3 datasets are made available for use, each at 150-200mb and sourced from Twitter comments, blogs and news sources respectively. The news dataset contains special ASCII characters which breaks the connection when reading in data. Since this only occurs 3 times in the file, the quickest way was simply to edit those out in Wordpad before importing. 
-
-## Quanteda text processing
-Quanteda is a R package for text analysis which will be used for this report. Quanteda uses a data struture called Document-Feature Matrix or DFM. Due to the high memory requirements the conversion of the textfiles to DFM is done in batches and saved to file. 
-
 
 ```{r loading, echo =FALSE, cache=TRUE}
 location <- 'https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip'
@@ -35,7 +39,7 @@ batches <- 5
 if (!file.exists('tweetsdfm.rds')){
         tweets <- readLines(files[11,1], encoding='UTF-8', skipNul=TRUE)
         tweets <- corpus(tweets, docnames = paste('tweet',1:length(tweets), sep = ""), docvars = data.frame(src = 'twitter'))
-        
+        sumCorpus <- dfm(tweets,)
         tweets <- batchedDFM(tweets)
         saveRDS(tweets, 'tweetsdfm.rds')
         rm('tweets')
@@ -58,65 +62,111 @@ if (!file.exists('blogsdfm.rds')){
         
         blogs <- batchedDFM(blogs)
         saveRDS(blogs, 'blogsdfm.rds')
-}
-
-if (!exists('blogs')){
-        blogs <- readRDS('blogsdfm.rds')
+        rm('blogs')
 }
 ```
 
+#### General data characteristics, line & word count.
+With the data loaded into DFMs we can extract some metadata. In Natural Language Processing 'types' can be understood as unique strings, or ,in the widest sense, distinct words. From the table below we can conclude although all three datasets contain similar numbers of words, Twitter contains shorter sentences and the most variety in word usage, whereas the news contains the least variety in word usage. 
 
-```{r dfming, echo=FALSE}
+
+```{r metadata, echo=FALSE, cache=TRUE}
+dfmfiles <- c('tweetsdfm.rds','newsdfm.rds','blogsdfm.rds')
+
+metadata <- data.frame(corpus = unlist(strsplit(dfmfiles, "dfm.rds")), lines = 0, words=0, types =0)
+
+textstats <- list()
+
+for(i in 1:3) {
+  metadata[i,2] <- length(readLines(files[10+i,1], encoding='UTF-8', skipNul=TRUE))
+
+  # if(i==1){
+  #   textstats <-list(textstat_frequency(readRDS(dfmfiles[i])))    
+  # } else{
+    textstats <-append(textstats,list(textstat_frequency(readRDS(dfmfiles[i]))))
+  # }
+  
+  metadata[i,3] <- sum(textstats[[i]]$frequency)
+  metadata[i,4] <- dim(textstats[[i]])[1]
+  
+  # prep for histograms
+  textstats[[i]]$instances <-cut2(textstats[[i]]$frequency, g=15)
+}
+
+metadata
 ```
 
+#### Including Plots
+In order to make a better sense of the 3 datasets let's plot on one hand the histograms of word frequency and on the other coverage, i.e. how many word it would take to cover a specific percentage of the texts. 
 
+```{r plot, fig.width = 10,fig.height = 3, cache=TRUE, warning=F, echo=F}
+ggs <- list()
 
+for (i in 1:3){
 
-## Including Plots
-In order to make a better sense of the 3 datasets let's plot on one hand the histograms of word frequency and on the other coverage, i.e. how many word it would take to cover a specific percentage of the texts.
+gghist <- ggplot(textstats[[i]], aes(x=instances))+
+  ylab('Count')+ 
+  xlab('Word frequency (grouped)')+
+  geom_histogram(stat='count', fill='lightblue')
 
-```{r plots, cache=TRUE, warning=F}
-# Blog plots
-summary <- textstat_frequency(blogs)
-summary$instances <- cut2(summary$frequency, g=15)
+ggfreq <- ggplot(textstats[[i]], aes(x=log10(rank), y=cumsum(frequency)/sum(frequency)))+
+  ylab('Coverage')+ 
+  geom_line()
 
-gg1 <- ggplot(summary, aes(x=instances))+ylab('Count')+ xlab('Word frequency (grouped)')+geom_histogram(stat='count', fill='lightblue')
-gg2 <- ggplot(summary, aes(x=log10(rank), y=cumsum(frequency)/sum(frequency)))+geom_line()
+ggs <- append(ggs, list(gghist, ggfreq))
 
-
-# Twitter plots
-sumTwitter <- textstat_frequency(readRDS('tweetsdfm.rds'))
-sumTwitter$instances <- cut2(sumTwitter$frequency, g=15)
-
-ggTwit1 <- ggplot(sumTwitter, aes(x=instances))+ylab('Count')+ xlab('Word frequency (grouped)')+geom_histogram(stat='count', fill='lightblue')
-ggTwit2 <- ggplot(sumTwitter, aes(x=log10(rank), y=cumsum(frequency)/sum(frequency)))+geom_line()
-
-
-# News plots
-sumNews <- textstat_frequency(readRDS('newsdfm.rds'))
-sumNews$instances <- cut2(sumNews$frequency, g=15)
-
-ggNews1 <- ggplot(sumNews, aes(x=instances))+ylab('Count')+ xlab('Word frequency (grouped)')+geom_histogram(stat='count', fill='lightblue')
-ggNews2 <- ggplot(sumNews, aes(x=log10(rank), y=cumsum(frequency)/sum(frequency)))+geom_line()
-
-
-plot_grid(gg1, gg2, align = 'h')
-plot_grid(ggTwit1,ggTwit2, align = 'h')
-plot_grid(ggNews1, ggNews2, align = 'h')
-
+}
+plot_grid(ggs[[1]], ggs[[2]], align = 'h', labels=c(metadata[1,1],""))
+plot_grid(ggs[[3]], ggs[[4]], align = 'h', labels=c(metadata[2,1],""))
+plot_grid(ggs[[5]], ggs[[6]], align = 'h', labels=c(metadata[3,1],""))
 ```
   
-## Data distribution
+#### Data distribution
 It would seem that the 3 datasets are surprisingly similar in that they all contain a significant amount of single use words and about 10.000 words cover 90% of the vocabulary for each set. A further investigation of some examples of the single use words show that many are would not be very useful for a predictive model as they consist of misspellings,made-up words and plain gibberish.
 
-```{r spotcheck, cache=TRUE, warning=F}
-data.frame(news= tail(sumNews$feature,50),twitter= tail(sumTwitter$feature,50),blogs =tail(summary$feature, 50))
+```{r spotcheck, cache=TRUE, warning=F, echo=F}
+exwords <- data.frame(twitter= tail(textstats[[1]][which(nchar(textstats[[1]]$feature)<20),]$feature,50),
+           news= tail(textstats[[2]][which(nchar(textstats[[2]]$feature)<20),]$feature,50),
+           blogs =head(tail(textstats[[3]][which(nchar(textstats[[3]]$feature)<20),]$feature,100),50))
+print.data.frame(exwords, row.names = F)
 ```
 
-## Data comparison
-```{r compare, cache=TRUE, warning=F}
-data.frame(news= tail(sumNews$feature,50),twitter= tail(sumTwitter$feature,50),blogs =tail(summary$feature, 50))
-```
+### Preliminary conclusions
+The databases are surprisingly similar in distribution of word frequencies and use. There seems to be need for cleaning the data in all 3 to remove that data which will not help our model.The news dataset was expected to be of much higher quality than the other two, due to having being professionally edited, however there seems to be issues in how it has been extracted. 
+Since tokenizing will be very resource-intensive it will be very helpful to improve the data as much as possible in an earlier step.
+Initial thoughts in that respect are: 
   
-# Preliminary conclusions
-The databases are surprisingly similar in distribution of word frequencies and use. There seems to be need for cleaning the data in all 3 to remove that data which will not help our model.
+1. Use of Lemmatization  
+2. Dictionnary check  
+3. Heavy preprocessing prior to tokenizations 
+4. Remove names and numbers 
+5. Remove stopwords
+
+For moving forward with the prediction model, probably heavy pruning of the datasets will be helpful, then after generating n-grams for each, combining the three datasets and generate the probabilities and some type of back-off mechanism for predictions.
+
+
+  
+# Appendices with code
+
+### 1 Downloading and building the Document Feature Matrices
+```{r appendix1, ref.label='loading', eval=FALSE}
+```
+
+### 2 Preparing the metadata
+```{r appendix2, ref.label='metadata', eval=FALSE}
+```
+
+### 3 Preparing the plots
+```{r appendix3, ref.label='plot', eval=FALSE}
+```
+
+### 4 Data Distribution 
+```{r appendix4, ref.label='spotcheck', eval=FALSE}
+```
+
+### 5 Helper functions 
+```{r appendix6}
+
+batchedDFM
+
+```
