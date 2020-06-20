@@ -1,0 +1,57 @@
+---
+title: "Strategy"
+author: "Olov Wikstrom"
+date: "6/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+```
+
+## Reducing dataset with language
+
+
+
+
+## PreProcessing logic
+Clearly working with small samples and using the whole set are both equally unfeasible. The earlier data analysis showed that an distribution of word, or more correctly: type,  usage is exponential. Coverage of 80% is an order of magnitude easier than 90%. Therefore, logically the algorithm for speed and correctness.    
+
+Conceptually the probability of an n-gram is the multiplication of the probability of its constituent parts. Therefore bigrams of two unlikely unigrams will be very unlikely, conversely the computation required for higher level ngrams is linearly higher. A practical model would therefore form a pyramidal shape for each ngram level, with fewer quadgrams and many unigrams.
+
+It is tempting to exclude uniquely observed words, types, bigrams etc.
+
+1-gram = Top 10.000
+2-gram = Top 1.000
+3-gram = Top 100
+4-gram = Top 10
+
+
+Solution for removing the data
+
+Calculate prob for unigrams and bigrams in observed sets. For trigram+ sections estimate probability based on unigrams and bigrams, 
+Does that mean no tri-grams or quad-grams?
+
+
+```{r }
+```
+
+## EDA
+
+You can also embed plots, for example:
+
+```{r test, echo=FALSE}
+```
+
+## Solution
+Save 30% of each for crossvalidation
+Dictionnary
+Exclude strange words & swearwords
+exclude egennamn
+
+Break down into pieces and intermediate storage of n-grams
+
+## Presentation
+
+## Shiny app
+
+
