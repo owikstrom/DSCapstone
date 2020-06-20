@@ -1,0 +1,34 @@
+---
+title: "Capstone Project Data Science Coursera/John Hopkins"
+author: "Olov Wikstrom"
+date: "6/18/2020"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Introduction
+
+
+
+## Algorithm
+The prediction algorithm is based on a dataset of observed n-grams in a dataset extracted from news, twitter and blogs, see link.
+The database consists of 5 levels of n-grams, 5-1. Upon submission the algorithm will 
+
+Does the slide deck contain a description of the algorithm used to make the prediction?
+
+
+## Application
+The application has been prepared in Shiny and has a very simple interface with only a textbox input and a submit button. The user can input any text, press submit and the prediction will appear below. 
+
+Does the slide deck describe the app, give instructions, and describe how it functions?
+
+```{r interface, echo = TRUE}
+```
+
+## Examples
+```{r pressure}
+```
+
