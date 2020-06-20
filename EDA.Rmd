@@ -131,6 +131,28 @@ exwords <- data.frame(twitter= tail(textstats[[1]][which(nchar(textstats[[1]]$fe
 print.data.frame(exwords, row.names = F)
 ```
 
+#### Bigrams
+In order to make a better sense of the 3 datasets let's plot on one hand the histograms of word frequency and on the other coverage, i.e. how many word it would take to cover a specific percentage of the texts. 
+
+```{r bigramplotting, fig.width = 10,fig.height = 3, cache=TRUE, warning=F, echo=F}
+textstats <- textstat_frequency(readRDS('news2grams.rds'))
+textstats$instances <-cut2(textstats$frequency, g=15)
+
+gghist <- ggplot(textstats, aes(x=instances))+
+  ylab('Count')+ 
+  xlab('Word frequency (grouped)')+
+  geom_histogram(stat='count', fill='lightblue')
+
+ggfreq <- ggplot(textstats, aes(x=log10(rank), y=cumsum(frequency)/sum(frequency)))+
+  ylab('Coverage')+ 
+  geom_line()
+
+
+plot_grid(gghist, ggfreq, align = 'h')
+
+```
+  
+
 ### Preliminary conclusions
 The databases are surprisingly similar in distribution of word frequencies and use. There seems to be need for cleaning the data in all 3 to remove that data which will not help our model.The news dataset was expected to be of much higher quality than the other two, due to having being professionally edited, however there seems to be issues in how it has been extracted. 
 Since tokenizing will be very resource-intensive it will be very helpful to improve the data as much as possible in an earlier step.
