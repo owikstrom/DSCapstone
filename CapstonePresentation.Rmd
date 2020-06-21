@@ -28,7 +28,7 @@ Does the slide deck describe the app, give instructions, and describe how it fun
 ```{r interface, echo = TRUE}
 ```
 
-## Examples
+## Results
 ```{r pressure}
 ```
 
