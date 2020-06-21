@@ -23,7 +23,7 @@ shinyUI(fluidPage(theme = shinytheme("cerulean"),
             ),
             fluidRow(
                     column(4,
-                           actionButton("submit", label="Submit phrase")  
+                           # actionButton("submit", label="Submit phrase")  
                     )           
             )    
         ),

@@ -5,15 +5,19 @@ source("../predict.R")
 shinyServer(function(input, output) {
     
     db <- readRDS('finalmodel.rds')
-
-    values <- reactiveValues(prediction = 0)
-    values$prediction = 0 
+    last_input <- ""
+    
+    updatePrediction <- reactive({
+            predictWord(input$phrase,db)          
+    })
+    # values <- reactiveValues(prediction = 0)
+    # values$prediction = "" 
 
     output$prediction <- renderText({
-        paste(values$prediction)
+        paste(updatePrediction())
     })
     
-    observeEvent(input$submit, { 
-        values$prediction <- predictWord(input$phrase,db)
-    })
+    # observeEvent(input$submit, { 
+    #     values$prediction <- updatePrediction()
+    # })
 })
