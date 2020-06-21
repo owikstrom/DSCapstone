@@ -8,17 +8,58 @@ output: html_document
 ```{r setup, include=FALSE}
 ```
 
-## Reducing dataset with language
+# Summary
+As part of the Data Science Capstone Project with Coursera/John Hopkins a method for prediction words was developed by the author. This report aims to explain the methodology employed to achieve this method. Based on Markovs theory for word prediction and Katzov backoff, an n-gram word model for n=1 to 5 was developed from the three datasets provided as part of the course material. The large size of the datasets meant that much work was put into optimizing the model for use in a lightweight web application.
+The method was employed in a shiny web app, which is available at: (test)[www.test.com]
+
+Since the exploratory data analysis was already discussed (here)[www.test.com] no further mention of it will be included in this report.
+
+Testing the method has proven to be XX% effective at prediction the next word. 
 
 
+## Introduction
+This purpose of this report is to give an overview of the work done for the Data Science Capstone Project with Coursera/John Hopkins. 
+As part of the course materials 3 databases with approximately 200mb of text samples each was provided for building the prediction model. The databases were phrases and snippets of text sampled from online blogs, twitter feeds and newspaper articles. The process for building the model was entirely left up to the student, but some articles and published literature on natural language processing was provided as guidance for the student. 
 
 
-## PreProcessing logic
-Clearly working with small samples and using the whole set are both equally unfeasible. The earlier data analysis showed that an distribution of word, or more correctly: type,  usage is exponential. Coverage of 80% is an order of magnitude easier than 90%. Therefore, logically the algorithm for speed and correctness.    
+## Theory
+Markovs theory stipulated that the probability for word occurrence can be approximated as the probability 
 
-Conceptually the probability of an n-gram is the multiplication of the probability of its constituent parts. Therefore bigrams of two unlikely unigrams will be very unlikely, conversely the computation required for higher level ngrams is linearly higher. A practical model would therefore form a pyramidal shape for each ngram level, with fewer quadgrams and many unigrams.
+To implement this model the author decided to build use al
 
-It is tempting to exclude uniquely observed words, types, bigrams etc.
+
+## Tools - Quanteda 
+There are many different packages available for text analysis, however an interesting article comparing efficiency found here was decisive in opting for Quanteda, as compared to tm or kwant. 
+
+Quanteda includes two data structures, "corpus" for storing the actual text and providing metadata and "dfm", a Data Feature Matrix, which counts word instances in matrices with documents on one axis and words, or "features" on the other. 
+The package also includes support for tokenization (splitting phrases by word) and some word processing such as splitting hyphenated words and removing urls.Helpfully there's also a method for generating n-grams.
+
+## Basic implementation idea
+
+#### Data 
+The initial idea for building the prediction method was to load the complete datasets into quanteda and create dfms for each dataset. This conversion tokenizes the data (breaks the text up by word, or 1-gram) and allow for some data cleaning by the tokenization settings.
+As a next step dfms will be created for each 2-gram, 3-gram et.c. where the features will be the n-gram rather than individual words as the feature. The n-grams and their frequency will be stored in a new datatable, splitting the n-gram into predictors (the known words) and prediction (answer) and the n-gram frequencies normalized to probabilities. 
+Finally the individual tables of n-grams will be stored in a list of each n-gram table stored in descending order. 
+
+#### Prediction algorithm
+On receiving a phrase snippet to predict the algorithm will commence at the highest order n-gram and return the prediction based on the probabilities. If no entry is contained in the data, the next lower level will be queried until the lowest level. 
+
+## Data Optimization
+Clearly working with small samples and using the whole set are both equally unfeasible. Ideally the data model should be as large as possible to allow for all the possibly word combinations in english, maximizing coverage. However, the earlier data analysis showed that an distribution of word, or more correctly: type, usage is exponential. Coverage of 80% is an order of magnitude easier than 90%. Therefore, logically the data model needs to carefully balanced for speed and coverage.    
+
+#### Pruning
+Higher N-grams are linearly more memory intense, due to holding more predictors per prediction. The basic model creates all possible combinations of n-grams, however, not all n-grams add value to the prediction model. A higher order n-gram is only useful if it narrows down the prediction alternatives. It is therefore possible to eliminate all n-grams that have equal probability to the corresponding (n-1)-gram. 
+
+#### Removing non-words
+Reviewing the input data showed a relatively high proportion of phrases deemed unlikely to help with word predictions, such as:
+
+One possibility considered was to eliminate those text snippets which was of "low quality" in the sense of English language and usability for prediction. For that purpose the words were crosschecked with an English dictionary, (wordsalpha)[test.com]. However the texts contain many non-words such as place-names etc. So instead of excluding those words, a test was performed on each text snippet of the proportion of non-English words. As it turns out, only 15% of all text snippets contained less than 50% English words. It was therefore concluded that this was not worth pursuing further. 
+
+
+#### Excluding low frequency words
+The previously mentioned optimizations are not enough to keep the data model at a manageable size, it is necessary to exclude less likely word combinations. Higher order n-grams are more specific, but also more accurate. The probability of the model returning a correct prediction is lower for each lower level, due to having more possible correct solutions higher. Cutting down on the 1-grams will reduce accuracy less than a corresponding cut of the 5-grams. 
+
+
 
 1-gram = Top 10.000
 2-gram = Top 1.000
@@ -31,13 +72,12 @@ Solution for removing the data
 Calculate prob for unigrams and bigrams in observed sets. For trigram+ sections estimate probability based on unigrams and bigrams, 
 Does that mean no tri-grams or quad-grams?
 
+## Batching
+Due to the very high data requirements, each step of the process has been batched and corresponding helper functions built.  
 
 ```{r }
 ```
 
-## EDA
-
-You can also embed plots, for example:
 
 ```{r test, echo=FALSE}
 ```
